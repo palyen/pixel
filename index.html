@@ -67,7 +67,6 @@ const welcomeText = document.getElementById('welcomeText');
 const roundText = document.getElementById('roundText');
 const questionPrompt = document.getElementById('questionPrompt');
 const optionsContainer = document.getElementById('optionsContainer');
-
 const loginScreen = document.getElementById('loginScreen');
 const gameInterface = document.getElementById('gameInterface');
 const nameInput = document.getElementById('nameInput');
@@ -85,14 +84,12 @@ function submitName() {
     playerName = enteredName;
     welcomeText.textContent = "Playing as: " + playerName;
     
-    // Switch frames immediately
     loginScreen.classList.add('hidden');
     gameInterface.classList.remove('hidden');
 }
 
-// Brand new network tunnel line configuration to bypass traffic congestion
+// FIX: Optimized open endpoint configuration for direct cross-talk streaming
 const socket = new WebSocket('wss://://piesocket.com');
-
 
 const questions = [
     { round: 1, qNum: 1, type: "Celebrity", answer: "Elvis Presley", options: ["Cliff Richard", "Elvis Presley", "Johnny Cash"], src: "https://wikimedia.org" },
@@ -109,8 +106,7 @@ let currentPixelSize = 45;
 let dynamicAnswered = false;
 
 currentImage.crossOrigin = "anonymous";
-currentImage.referrerPolicy = "no-referrer"; 
-    
+
 socket.onmessage = function(event) {
     const command = JSON.parse(event.data);
     
