@@ -85,6 +85,7 @@ const boardTitle = document.getElementById('boardTitle');
 let currentQ = 1;
 let fastLogs = [];
 
+// Connect to the synchronized network channel
 const socket = new WebSocket('wss://://piesocket.com');
 
 socket.onmessage = function(event) {
@@ -103,6 +104,19 @@ function activateQuestion(num) {
     fastLogs = [];
     board.innerHTML = '';
     boardTitle.textContent = "Live Scoreboard (Q" + num + ")";
+    
+    // VISUAL UPDATE: Reset all button highlights
+    const allButtons = document.querySelectorAll('.q-btn');
+    allButtons.forEach(btn => {
+        btn.style.backgroundColor = '#3a3a40';
+        btn.style.borderColor = 'transparent';
+    });
+    
+    // VISUAL UPDATE: Highlight the active button in vibrant green!
+    const activeBtn = window.event.target;
+    if (activeBtn && activeBtn.classList.contains('q-btn')) {
+        activeBtn.style.backgroundColor = '#34c759';
+    }
     
     const payload = { type: "SET_QUESTION", qNum: num, pixelSize: 45 };
     socket.send(JSON.stringify(payload));
@@ -143,5 +157,6 @@ function resetScoreboard() {
     board.innerHTML = '';
 }
 </script>
+    
 </body>
 </html>
