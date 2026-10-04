@@ -9,20 +9,18 @@
         .container { max-width: 400px; margin: 0 auto; }
         h2 { font-size: 26px; margin: 10px 0; }
         .player-welcome { font-size: 18px; color: #555; font-weight: bold; margin-bottom: 5px; }
-        .round-indicator { font-size: 20px; font-weight: bold; color: #007aff; margin-bottom: 10px; }
+        .round-indicator { font-size: 22px; font-weight: bold; color: #007aff; margin-top: 15px; margin-bottom: 15px; padding: 10px; background: #e0f0ff; border-radius: 8px; }
         canvas { width: 100%; max-width: 320px; height: auto; border: 4px solid #000; border-radius: 12px; }
         .options-grid { display: grid; grid-template-columns: 1fr; gap: 15px; margin-top: 20px; }
         .option-button { background-color: #f9f9f9; border: 3px solid #000000; border-radius: 16px; font-size: 24px; font-weight: bold; padding: 20px; color: #000; cursor: pointer; }
         .option-button:active { background-color: #e0e0e0; }
         #resultMessage { font-size: 26px; font-weight: bold; margin-top: 20px; height: 35px; }
         
-        /* High-Contrast Ticker Box for Players */
         .ticker-box { margin-top: 20px; padding: 15px; border: 3px solid #34c759; border-radius: 12px; background: #f2fbf4; text-align: left; }
         .ticker-title { font-size: 20px; font-weight: bold; color: #1fa341; margin: 0 0 10px 0; text-align: center; }
         .ticker-item { font-size: 18px; font-weight: bold; padding: 6px 0; border-bottom: 1px dashed #ccc; display: flex; justify-content: space-between; }
         .ticker-time { color: #666; font-size: 16px; }
 
-        /* Senior Login Screen Styling */
         .hidden { display: none !important; }
         .login-box { padding: 30px 10px; border: 3px solid #000; border-radius: 16px; background: #fdfdfd; margin-top: 40px; }
         .login-input { font-size: 24px; padding: 15px; width: 80%; border: 3px solid #000; border-radius: 10px; margin-bottom: 20px; text-align: center; }
@@ -33,7 +31,7 @@
 
 <div class="container">
     
-    <!-- STEP 1: WELCOME SCREEN -->
+    <!-- STEP 1: WELCOME NAME ENTRY SCREEN -->
     <div id="loginScreen" class="login-box">
         <h2>Welcome to the Game!</h2>
         <p style="font-size: 18px; color: #444; margin-bottom: 20px;">Please type your first name below to start:</p>
@@ -42,21 +40,24 @@
         <button class="login-btn" onclick="submitName()">Join Game</button>
     </div>
 
-    <!-- STEP 2: MAIN GAME INTERFACE -->
+    <!-- STEP 2: LOBBY WAITING SCREEN -->
+    <div id="lobbyScreen" class="hidden">
+        <div class="round-indicator">⏳ Waiting for Host to Start...</div>
+        <p style="font-size: 18px; color: #555; padding: 0 10px;">Please relax and keep this page open. As soon as the host launches Round 1 on Zoom, the game will automatically appear on your screen!</p>
+    </div>
+
+    <!-- STEP 3: MAIN GAME INTERFACE -->
     <div id="gameInterface" class="hidden">
         <div class="player-welcome" id="welcomeText">Hello, Player!</div>
-        <div class="round-indicator" id="roundText">Waiting for Host to start...</div>
+        <div class="round-indicator" id="roundText">Round Loading...</div>
         <h2 id="questionPrompt">What is this?</h2>
         
         <canvas id="gameCanvas" width="400" height="500"></canvas>
         
-        <div class="options-grid" id="optionsContainer">
-            <!-- Buttons loaded dynamically -->
-        </div>
+        <div class="options-grid" id="optionsContainer"></div>
         
         <div id="resultMessage"></div>
 
-        <!-- NEW: Real-time Live Ticker Section -->
         <div id="tickerContainer" class="ticker-box hidden">
             <div class="ticker-title">⏱️ Fast Guesses This Round</div>
             <div id="tickerList"></div>
@@ -72,13 +73,16 @@ const welcomeText = document.getElementById('welcomeText');
 const roundText = document.getElementById('roundText');
 const questionPrompt = document.getElementById('questionPrompt');
 const optionsContainer = document.getElementById('optionsContainer');
+
 const loginScreen = document.getElementById('loginScreen');
+const lobbyScreen = document.getElementById('lobbyScreen');
 const gameInterface = document.getElementById('gameInterface');
 const nameInput = document.getElementById('nameInput');
 const tickerContainer = document.getElementById('tickerContainer');
 const tickerList = document.getElementById('tickerList');
 
 let playerName = "Guest";
+let gameHasStarted = false;
 
 function submitName() {
     const enteredName = nameInput.value.trim();
@@ -88,37 +92,24 @@ function submitName() {
     }
     playerName = enteredName;
     welcomeText.textContent = "Playing as: " + playerName;
+    
     loginScreen.classList.add('hidden');
-    gameInterface.classList.remove('hidden');
+    if (!gameHasStarted) {
+        lobbyScreen.classList.remove('hidden');
+    } else {
+        gameInterface.classList.remove('hidden');
+    }
 }
 
-// Connect to the synchronized network channel
 const socket = new WebSocket('wss://://piesocket.com');
 
 const questions = [
-    // ROUND 1
-    { round: 1, qNum: 1, type: "Celebrity", answer: "Elvis Presley", options: ["Cliff Richard", "Elvis Presley", "Johnny Cash"], src: "https://i.imgur.com/LS0bJLZ.jpeg" },
+    { round: 1, qNum: 1, type: "Celebrity", answer: "Elvis Presley", options: ["Cliff Richard", "Elvis Presley", "Johnny Cash"], src: "https://imgur.com" },
     { round: 1, qNum: 2, type: "Landmark", answer: "Eiffel Tower", options: ["Eiffel Tower", "Big Ben", "Empire State"], src: "https://wikimedia.org" },
     { round: 1, qNum: 3, type: "Celebrity", answer: "Marilyn Monroe", options: ["Audrey Hepburn", "Jane Russell", "Marilyn Monroe"], src: "https://wikimedia.org" },
     { round: 1, qNum: 4, type: "Landmark", answer: "Statue of Liberty", options: ["Mount Rushmore", "Statue of Liberty", "Golden Gate"], src: "https://wikimedia.org" },
     { round: 1, qNum: 5, type: "Celebrity", answer: "Frank Sinatra", options: ["Dean Martin", "Frank Sinatra", "Bing Crosby"], src: "https://wikimedia.org" },
-    { round: 1, qNum: 6, type: "Landmark", answer: "Great Wall of China", options: ["Great Wall of China", "Macchu Picchu", "Colosseum"], src: "https://wikimedia.org" },
-    
-    // ROUND 2
-    { round: 2, qNum: 7, type: "Celebrity", answer: "Sean Connery", options: ["Roger Moore", "Cary Grant", "Sean Connery"], src: "https://wikimedia.org" },
-    { round: 2, qNum: 8, type: "Landmark", answer: "Taj Mahal", options: ["Taj Mahal", "Pyramids", "Petra"], src: "https://wikimedia.org" },
-    { round: 2, qNum: 9, type: "Celebrity", answer: "Audrey Hepburn", options: ["Audrey Hepburn", "Judy Garland", "Grace Kelly"], src: "https://wikimedia.org" },
-    { round: 2, qNum: 10, type: "Landmark", answer: "Leaning Tower of Pisa", options: ["Eiffel Tower", "Leaning Tower of Pisa", "Colosseum"], src: "https://wikimedia.org" },
-    { round: 2, qNum: 11, type: "Celebrity", answer: "John Wayne", options: ["Clint Eastwood", "John Wayne", "Gary Cooper"], src: "https://wikimedia.org" },
-    { round: 2, qNum: 12, type: "Landmark", answer: "Pyramids of Giza", options: ["Pyramids of Giza", "Stonehenge", "Grand Canyon"], src: "https://wikimedia.org" },
-
-    // ROUND 3
-    { round: 3, qNum: 13, type: "Celebrity", answer: "Grace Kelly", options: ["Elizabeth Taylor", "Ingrid Bergman", "Grace Kelly"], src: "https://wikimedia.org" },
-    { round: 3, qNum: 14, type: "Landmark", answer: "Sydney Opera House", options: ["Sydney Opera House", "Eiffel Tower", "Big Ben"], src: "https://wikimedia.org" },
-    { round: 3, qNum: 15, type: "Celebrity", answer: "Louis Armstrong", options: ["Sammy Davis Jr.", "Louis Armstrong", "Nat King Cole"], src: "https://wikimedia.org" },
-    { round: 3, qNum: 16, type: "Landmark", answer: "Grand Canyon", options: ["Mount Everest", "Grand Canyon", "Mount Rushmore"], src: "https://wikimedia.org" },
-    { round: 3, qNum: 17, type: "Celebrity", answer: "Charlie Chaplin", options: ["Buster Keaton", "Charlie Chaplin", "Laurel & Hardy"], src: "https://wikimedia.org" },
-    { round: 3, qNum: 18, type: "Landmark", answer: "Colosseum", options: ["Colosseum", "Parthenon", "Leaning Tower"], src: "https://wikimedia.org" }
+    { round: 1, qNum: 6, type: "Landmark", answer: "Great Wall of China", options: ["Great Wall of China", "Macchu Picchu", "Colosseum"], src: "https://wikimedia.org" }
 ];
 
 let activeQuestion = null;
@@ -132,15 +123,81 @@ socket.onmessage = function(event) {
     const command = JSON.parse(event.data);
     
     if (command.type === "SET_QUESTION") {
+        gameHasStarted = true;
         activeQuestion = questions.find(q => q.qNum === command.qNum);
         dynamicAnswered = false;
         currentPixelSize = command.pixelSize; 
         resultMessage.textContent = "";
         
-        // Hide and clear the ticker when a brand new question is loaded
+        lobbyScreen.classList.add('hidden');
+        loginScreen.classList.add('hidden');
+        gameInterface.classList.remove('hidden');
+        
         tickerContainer.classList.add('hidden');
         tickerList.innerHTML = '';
         
         roundText.textContent = "Round " + activeQuestion.round + " - Question " + (((activeQuestion.qNum - 1) % 6) + 1) + " of 6";
         questionPrompt.textContent = activeQuestion.type === "Celebrity" ? "Who is this celebrity?" : "What is this landmark?";
         
+        currentImage.src = activeQuestion.src;
+        currentImage.onload = () => { renderPixelation(); };
+        
+        optionsContainer.innerHTML = '';
+        activeQuestion.options.forEach(opt => {
+            const btn = document.createElement('button');
+            btn.className = 'option-button';
+            btn.textContent = opt;
+            btn.onclick = () => handlePlayerGuess(opt, btn);
+            optionsContainer.appendChild(btn);
+        });
+    }
+    
+    if (command.type === "UPDATE_TICKER" && activeQuestion && command.qNum === activeQuestion.qNum) {
+        tickerContainer.classList.remove('hidden');
+        tickerList.innerHTML = '';
+        command.logs.forEach((log, index) => {
+            const medal = index === 0 ? "🥇 " : (index === 1 ? "🥈 " : (index === 2 ? "🥉 " : "⭐ "));
+            tickerList.innerHTML += `<div class="ticker-item"><span>${medal}${log.player}</span><span class="ticker-time">${log.time}</span></div>`;
+        });
+    }
+};
+
+function renderPixelation() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    if (currentPixelSize === 1) {
+        ctx.imageSmoothingEnabled = true;
+        ctx.drawImage(currentImage, 0, 0, canvas.width, canvas.height);
+    } else {
+        ctx.imageSmoothingEnabled = false;
+        const tinyW = canvas.width / currentPixelSize;
+        const tinyH = canvas.height / currentPixelSize;
+        ctx.drawImage(currentImage, 0, 0, tinyW, tinyH);
+        ctx.drawImage(canvas, 0, 0, tinyW, tinyH, 0, 0, canvas.width, canvas.height);
+    }
+}
+
+function handlePlayerGuess(chosenOption, element) {
+    if (dynamicAnswered) return; 
+    
+    if (chosenOption === activeQuestion.answer) {
+        dynamicAnswered = true;
+        resultMessage.style.color = "green";
+        resultMessage.textContent = "Correct! 🎉 Scoring recorded.";
+        currentPixelSize = 1; 
+        renderPixelation();
+        
+        const packet = {
+            type: "SUBMIT_WIN",
+            player: playerName,
+            qNum: activeQuestion.qNum,
+            timestamp: new Date().toLocaleTimeString() + '.' + String(new Date().getMilliseconds()).padStart(3, '0'),
+            shortTime: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })
+        };
+        socket.send(JSON.stringify(packet));
+    } else {
+element.style.backgroundColor = "#ff3b30";
+element.style.color = "#ffffff";
+resultMessage.style.color = "red";
+resultMessage.textContent = "Try again! ❌";
+}
+}
