@@ -1,0 +1,152 @@
+```html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Master Tournament Director</title>
+    <style>
+        body { font-family: Arial, sans-serif; background: #121214; color: #fff; padding: 20px; }
+        .container { display: grid; grid-template-columns: 1.2fr 0.8fr; gap: 20px; max-width: 1200px; margin: 0 auto; }
+        .panel { background: #1a1a1e; border: 2px solid #333; padding: 20px; border-radius: 12px; }
+        h2 { color: #007aff; margin-top: 0; }
+        .round-box { background: #26262b; padding: 15px; border-radius: 8px; margin-bottom: 15px; border-top: 4px solid #007aff; }
+        .grid-buttons { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 10px; }
+        .q-btn { background: #3a3a40; color: #fff; border: none; padding: 12px; font-weight: bold; border-radius: 6px; cursor: pointer; font-size: 14px; }
+        .q-btn:hover { background: #505056; }
+        .action-row { display: flex; gap: 10px; margin-top: 15px; }
+        .control-btn { flex: 1; border: none; padding: 12px; font-weight: bold; border-radius: 6px; cursor: pointer; font-size: 16px; color: #fff; }
+        .leader-item { display: flex; justify-content: space-between; padding: 12px; background: #26262b; margin-bottom: 8px; border-radius: 6px; font-size: 18px; border-left: 5px solid #34c759; }
+        .ms { color: #aaa; font-family: monospace; font-size: 14px; }
+    </style>
+</head>
+<body>
+
+<h1>🏆 18-Question Master Game Controller</h1>
+<div class="container">
+    
+    <!-- LEFT PANEL -->
+    <div class="panel">
+        <h2>Launch Game Prompts</h2>
+        <p>Click a question button to load the image onto all screens instantly.</p>
+        
+        <div class="round-box" style="border-top-color: #007aff;">
+            <strong>Round 1 (Questions 1-6)</strong>
+            <div class="grid-buttons">
+                <button class="q-btn" onclick="activateQuestion(1)">Q1: Elvis</button>
+                <button class="q-btn" onclick="activateQuestion(2)">Q2: Eiffel</button>
+                <button class="q-btn" onclick="activateQuestion(3)">Q3: Marilyn</button>
+                <button class="q-btn" onclick="activateQuestion(4)">Q4: Liberty</button>
+                <button class="q-btn" onclick="activateQuestion(5)">Q5: Sinatra</button>
+                <button class="q-btn" onclick="activateQuestion(6)">Q6: Great Wall</button>
+            </div>
+        </div>
+
+        <div class="round-box" style="border-top-color: #ff9500;">
+            <strong>Round 2 (Questions 7-12)</strong>
+            <div class="grid-buttons">
+                <button class="q-btn" onclick="activateQuestion(7)">Q7: Connery</button>
+                <button class="q-btn" onclick="activateQuestion(8)">Q8: Taj Mahal</button>
+                <button class="q-btn" onclick="activateQuestion(9)">Q9: Audrey</button>
+                <button class="q-btn" onclick="activateQuestion(10)">Q10: Pisa</button>
+                <button class="q-btn" onclick="activateQuestion(11)">Q11: J. Wayne</button>
+                <button class="q-btn" onclick="activateQuestion(12)">Q12: Pyramids</button>
+            </div>
+        </div>
+
+        <div class="round-box" style="border-top-color: #af52de;">
+            <strong>Round 3 (Questions 13-18)</strong>
+            <div class="grid-buttons">
+                <button class="q-btn" onclick="activateQuestion(13)">Q13: Grace K.</button>
+                <button class="q-btn" onclick="activateQuestion(14)">Q14: Sydney Opera</button>
+                <button class="q-btn" onclick="activateQuestion(15)">Q15: Armstrong</button>
+                <button class="q-btn" onclick="activateQuestion(16)">Q16: Canyon</button>
+                <button class="q-btn" onclick="activateQuestion(17)">Q17: Chaplin</button>
+                <button class="q-btn" onclick="activateQuestion(18)">Q18: Colosseum</button>
+            </div>
+        </div>
+        
+        <div class="action-row">
+            <button class="control-btn" style="background:#34c759;" onclick="triggerReveal()">Clear Image for Everyone (Reveal Answer)</button>
+            <button class="control-btn" style="background:#ff3b30;" onclick="resetScoreboard()">Reset Current Scoreboard</button>
+        </div>
+    </div>
+
+    <!-- RIGHT PANEL -->
+    <div class="panel">
+        <h2 id="boardTitle">Live Scoreboard (Q1)</h2>
+        <p>Sorted by millisecond submission arrivals:</p>
+        <div id="board"></div>
+    </div>
+</div>
+
+<script>
+const board = document.getElementById('board');
+const boardTitle = document.getElementById('boardTitle');
+let currentQ = 1;
+let fastLogs = [];
+
+// Connect to the synchronized network channel
+const socket = new WebSocket('wss://://piesocket.com');
+
+socket.onmessage = function(event) {
+    const packet = JSON.parse(event.data);
+    
+    if (packet.type === "SUBMIT_WIN" && packet.qNum === currentQ) {
+        if (!fastLogs.some(l => l.player === packet.player)) {
+            fastLogs.push(packet);
+            updateScoreboardAndTicker();
+        }
+    }
+};
+
+function activateQuestion(num) {
+    currentQ = num;
+    fastLogs = [];
+    board.innerHTML = '';
+    boardTitle.textContent = "Live Scoreboard (Q" + num + ")";
+    
+    const payload = { type: "SET_QUESTION", qNum: num, pixelSize: 45 };
+    socket.send(JSON.stringify(payload));
+}
+
+function triggerReveal() {
+    const payload = { type: "SET_QUESTION", qNum: currentQ, pixelSize: 1 };
+    socket.send(JSON.stringify(payload));
+}
+
+function updateScoreboardAndTicker() {
+    board.innerHTML = '';
+    let playerTickerData = [];
+
+    fastLogs.forEach((log, index) => {
+        // Prepare simplified item info to broadcast back to players
+        playerTickerData.push({
+            player: log.player,
+            time: log.shortTime
+        });
+
+        const entry = document.createElement('div');
+        entry.className = 'leader-item';
+        if(index === 0) entry.style.borderLeftColor = '#ffcc00';
+        entry.innerHTML = `<span><strong>#${index+1}</strong> ${log.player}</span><span class="ms">${log.timestamp}</span>`;
+        board.appendChild(entry);
+    });
+
+    // Broadcast the ticker list back out to all players instantly
+    const tickerPayload = {
+        type: "UPDATE_TICKER",
+        qNum: currentQ,
+        logs: playerTickerData
+    };
+    socket.send(JSON.stringify(tickerPayload));
+}
+
+function resetScoreboard() {
+    fastLogs = [];
+    board.innerHTML = '';
+}
+</script>
+
+</body>
+</html>
