@@ -86,7 +86,6 @@ const boardTitle = document.getElementById('boardTitle');
 let currentQ = 1;
 let fastLogs = [];
 
-// Connect to the synchronized network channel
 const socket = new WebSocket('wss://://piesocket.com');
 
 socket.onmessage = function(event) {
@@ -120,7 +119,6 @@ function updateScoreboardAndTicker() {
     let playerTickerData = [];
 
     fastLogs.forEach((log, index) => {
-        // Prepare simplified item info to broadcast back to players
         playerTickerData.push({
             player: log.player,
             time: log.shortTime
@@ -133,7 +131,6 @@ function updateScoreboardAndTicker() {
         board.appendChild(entry);
     });
 
-    // Broadcast the ticker list back out to all players instantly
     const tickerPayload = {
         type: "UPDATE_TICKER",
         qNum: currentQ,
@@ -147,6 +144,5 @@ function resetScoreboard() {
     board.innerHTML = '';
 }
 </script>
-
 </body>
 </html>
