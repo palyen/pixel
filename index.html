@@ -109,7 +109,8 @@ let currentPixelSize = 45;
 let dynamicAnswered = false;
 
 currentImage.crossOrigin = "anonymous";
-
+currentImage.referrerPolicy = "no-referrer"; 
+    
 socket.onmessage = function(event) {
     const command = JSON.parse(event.data);
     
